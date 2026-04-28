@@ -70,11 +70,11 @@ with engine.connect() as conn:
 for user in users:
     print(user)
 
+ # Atividade 2: cria arquivos CSV por ano com dados anonimizados
+ # de pessoas que nasceram nesse determinado ano
 dados_por_ano = {}
 
 for user in users:
-    # Cria arquivos CSV por ano com dados anonimizados
-    # de pessoas que nasceram nesse determinado ano
     ano = user[5].year
 
     if ano not in dados_por_ano:
@@ -89,3 +89,19 @@ for ano in dados_por_ano:
 
         for u in dados_por_ano[ano]:
             writer.writerow(u[:6])
+
+# Cria um único arquivo CSV com todos os registros, 
+# contendo apenas nome e CPF, com dados SEM ANONIMIZAÇÃO
+todos = []
+
+with engine.connect() as conn:
+    result = conn.execute(text("SELECT * FROM usuarios LIMIT 10;"))
+    for row in result:
+        todos.append(row)
+
+with open("todos.csv", "w", newline="", encoding="utf-8") as f:
+    writer = csv.writer(f)
+    writer.writerow(["nome", "cpf"])
+
+    for t in todos:
+        writer.writerow([t[1], t[2]])
