@@ -3,6 +3,7 @@ from datetime import datetime
 
 import time
 from functools import wraps
+from decorator_tempo import medir_tempo
 import csv
 
 def medir_tempo(func):
@@ -51,7 +52,7 @@ def LGPD(row):
     # Anonimiza o CPF, substituindo os últimos caracteres por *
     cpf = row[2][:3] + ".***.***-**"
 
-    # Anonimizaa o e-mail, substituindo os caracteres por *
+    # Anonimiza o e-mail, substituindo os caracteres por *
     email_usuario, email_dom = row[3].split("@")
     email = email_usuario[0] + "*" * (len(email_usuario) - 1) + "@" + email_dom
 
@@ -62,7 +63,7 @@ def LGPD(row):
 
 users = []
 with engine.connect() as conn:
-    result = conn.execute(text("SELECT * FROM usuarios LIMIT 5;"))
+    result = conn.execute(text("SELECT * FROM usuarios;"))
     for row in result:
         row = LGPD(row)
         users.append(row)
@@ -76,11 +77,11 @@ dados_por_ano = {}
 
 for user in users:
     ano = user[5].year
-
-    if ano not in dados_por_ano:
+    
+if ano not in dados_por_ano:
         dados_por_ano[ano] = []
 
-    dados_por_ano[ano].append(user)
+dados_por_ano[ano].append(user)
 
 for ano in dados_por_ano:
     with open(f"{ano}.csv", "w", newline="", encoding="utf-8") as f:
@@ -90,12 +91,12 @@ for ano in dados_por_ano:
         for u in dados_por_ano[ano]:
             writer.writerow(u[:6])
 
-# Cria um único arquivo CSV com todos os registros, 
+# Atividade 3: cria um único arquivo CSV com todos os registros, 
 # contendo apenas nome e CPF, com dados SEM ANONIMIZAÇÃO
 todos = []
 
 with engine.connect() as conn:
-    result = conn.execute(text("SELECT * FROM usuarios LIMIT 10;"))
+    result = conn.execute(text("SELECT * FROM usuarios;"))
     for row in result:
         todos.append(row)
 
@@ -105,3 +106,4 @@ with open("todos.csv", "w", newline="", encoding="utf-8") as f:
 
     for t in todos:
         writer.writerow([t[1], t[2]])
+
