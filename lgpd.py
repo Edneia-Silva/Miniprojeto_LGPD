@@ -33,8 +33,30 @@ usuarios = Table(
 metadata.create_all(engine)
 
 @medir_tempo
+
+# --- ATIVIDADE 1: FUNÇÃO LGPD (ANONIMIZAÇÃO) ---
 def LGPD(row):
-    return row
+    nome = row[1].split(" ")
+
+    # Anonimiza o nome, troca as letras por *, exceto a primeira letra
+    primeiro = nome[0]
+    nome_anon = primeiro[0] + "*" * (len(primeiro) - 1)
+
+    # mantém último sobrenome
+    if len(nome) > 1:
+        nome_anon += " " + nome[-1]
+
+    # Anonimiza o CPF, substituindo os últimos caracteres por *
+    cpf = row[2][:3] + ".***.***-**"
+
+    # Anonimizaa o e-mail, substituindo os caracteres por *
+    email_usuario, email_dom = row[3].split("@")
+    email = email_usuario[0] + "*" * (len(email_usuario) - 1) + "@" + email_dom
+
+    # Anonimiza o telefone, apresentando somente o final
+    telefone = row[4][-4:]
+
+    return (row[0], nome_anon, cpf, email, telefone, row[5], row[6], row[7])
 
 users = []
 with engine.connect() as conn:
