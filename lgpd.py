@@ -3,6 +3,8 @@ from datetime import datetime
 
 import time
 from functools import wraps
+import csv
+
 def medir_tempo(func):
     """Decorator que mede o tempo de execução de uma função."""
     @wraps(func)
@@ -67,3 +69,23 @@ with engine.connect() as conn:
 
 for user in users:
     print(user)
+
+dados_por_ano = {}
+
+for user in users:
+    # Cria arquivos CSV por ano com dados anonimizados
+    # de pessoas que nasceram nesse determinado ano
+    ano = user[5].year
+
+    if ano not in dados_por_ano:
+        dados_por_ano[ano] = []
+
+    dados_por_ano[ano].append(user)
+
+for ano in dados_por_ano:
+    with open(f"{ano}.csv", "w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow(["id", "nome", "cpf", "email", "telefone", "data_nascimento"])
+
+        for u in dados_por_ano[ano]:
+            writer.writerow(u[:6])
