@@ -1,49 +1,14 @@
-from sqlalchemy import create_engine, MetaData, Table, Column, Integer, String, Date, DateTime, insert, text
-from datetime import datetime
-
-import time
-from functools import wraps
-from decorator_tempo import medir_tempo
+from sqlalchemy import create_engine, text
 import csv
+from decorator_tempo import medir_tempo
 
-def medir_tempo(func):
-    """Decorator que mede o tempo de execução de uma função."""
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        inicio = time.perf_counter()  # tempo inicial (mais preciso que time.time)
-        resultado = func(*args, **kwargs)
-        fim = time.perf_counter()     # tempo final
-        duracao = fim - inicio
-        print(f"⏱ Função '{func.__name__}' executada em {duracao:.6f} segundos.")
-        return resultado
-    return wrapper
+engine = create_engine("postgresql+psycopg2://alunos:AlunoFatec@200.19.224.150:5432/atividade2")
 
-engine = create_engine("postgresql+psycopg2://alunos:AlunoFatec@200.19.224.150:5432/atividade2", echo=False)
-metadata = MetaData()
 
-usuarios = Table(
-    'usuarios', metadata,
-    Column('id', Integer, primary_key=True),
-    Column('nome', String(50), nullable=False, index=True),
-    Column('cpf', String(14), nullable=False),
-    Column('email', String(100), nullable=False, unique=True),
-    Column('telefone', String(20), nullable=False),
-    Column('data_nascimento', Date, nullable=False),
-    Column('created_on', DateTime(), default=datetime.now),
-    Column('updated_on', DateTime(), default=datetime.now, onupdate=datetime.now)
-)
-
-metadata.create_all(engine)
-
-@medir_tempo
-
-# --- ATIVIDADE 1: FUNÇÃO LGPD (ANONIMIZAÇÃO) ---
+# --- ATIVIDADE 1: ANONIMIZAÇÃO ---
 def LGPD(row):
-    nome = row[1].split(" ")
-
-    # Anonimiza o nome, troca as letras por *, exceto a primeira letra
-    primeiro = nome[0]
-    nome_anon = primeiro[0] + "*" * (len(primeiro) - 1)
+    nome = row[1].split(" ")  # Anonimiza o nome, troca as letras por *, exceto a primeira letra
+    nome_anon = nome[0][0] + "*" * (len(nome[0]) - 1)
 
     # mantém último sobrenome
     if len(nome) > 1:
@@ -59,51 +24,73 @@ def LGPD(row):
     # Anonimiza o telefone, apresentando somente o final
     telefone = row[4][-4:]
 
-    return (row[0], nome_anon, cpf, email, telefone, row[5], row[6], row[7])
+    return (row[0], nome_anon, cpf, email, telefone, row[5])
 
-users = []
+
+# --- BUSCA DADOS UMA VEZ SÓ ---
+def buscar_usuarios():
+    with engine.connect() as conn:
+        return list(conn.execute(text("SELECT * FROM usuarios;")))
+
+print("\n--- ATIVIDADE 1: AMOSTRA LGPD (ANONIMIZAÇÃO) ---")
+
 with engine.connect() as conn:
-    result = conn.execute(text("SELECT * FROM usuarios;"))
+    result = conn.execute(text("SELECT * FROM usuarios LIMIT 5;"))
+
     for row in result:
-        row = LGPD(row)
-        users.append(row)
+        print(LGPD(row))
 
-for user in users:
-    print(user)
+print("---------------------------------\n")
 
- # Atividade 2: cria arquivos CSV por ano com dados anonimizados
- # de pessoas que nasceram nesse determinado ano
-dados_por_ano = {}
 
-for user in users:
-    ano = user[5].year
-    
-if ano not in dados_por_ano:
-        dados_por_ano[ano] = []
+# --- ATIVIDADE 2:  ---
+# Gerar arquivos por ano (anonimizados)
+@medir_tempo
+def atividade2():
+    usuarios = buscar_usuarios()
+    dados_por_ano = {}
 
-dados_por_ano[ano].append(user)
+    for row in usuarios:
+        user = LGPD(row)
+        ano = user[5].year
 
-for ano in dados_por_ano:
-    with open(f"{ano}.csv", "w", newline="", encoding="utf-8") as f:
+        if ano not in dados_por_ano:
+            dados_por_ano[ano] = []
+
+        dados_por_ano[ano].append(user)
+
+    for ano, lista in dados_por_ano.items():
+        with open(f"{ano}.csv", "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(["id", "nome", "cpf", "email", "telefone", "data_nascimento"])
+
+            for u in lista:
+                writer.writerow(u)
+
+print("Atividade 2 concluída - arquivos por ano gerados")
+
+
+# --- ATIVIDADE 3 ---
+# Gerar todos.csv sem anonimização
+@medir_tempo
+def atividade3():
+    usuarios = buscar_usuarios()
+
+    with open("todos.csv", "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
-        writer.writerow(["id", "nome", "cpf", "email", "telefone", "data_nascimento"])
+        writer.writerow(["nome", "cpf"])
+        
+        for u in usuarios:
+            writer.writerow([u[1], u[2]])
 
-        for u in dados_por_ano[ano]:
-            writer.writerow(u[:6])
+print("Atividade 3 concluída - arquivo todos.csv gerado")
 
-# Atividade 3: cria um único arquivo CSV com todos os registros, 
-# contendo apenas nome e CPF, com dados SEM ANONIMIZAÇÃO
-todos = []
 
-with engine.connect() as conn:
-    result = conn.execute(text("SELECT * FROM usuarios;"))
-    for row in result:
-        todos.append(row)
+# --- ATIVIDADE 4 ---
+# Medir tempo + salvar em log usando decorator
+# Não tem função nova. Esse decorator foi aplicado nas funções 
+# das atividades 2 e 3, registrando os tempos em arquivo de log.
 
-with open("todos.csv", "w", newline="", encoding="utf-8") as f:
-    writer = csv.writer(f)
-    writer.writerow(["nome", "cpf"])
-
-    for t in todos:
-        writer.writerow([t[1], t[2]])
-
+# --- EXECUÇÃO ---
+atividade2()
+atividade3()
