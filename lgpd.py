@@ -1,6 +1,9 @@
 from sqlalchemy import create_engine, text
 import csv
 from decorator_tempo import medir_tempo
+import os
+
+os.makedirs("anos", exist_ok=True)
 
 engine = create_engine("postgresql+psycopg2://alunos:AlunoFatec@200.19.224.150:5432/atividade2")
 
@@ -60,7 +63,7 @@ def atividade2():
         dados_por_ano[ano].append(user)
 
     for ano, lista in dados_por_ano.items():
-        with open(f"{ano}.csv", "w", newline="", encoding="utf-8") as f:
+        with open(f"anos/{ano}.csv", "w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
             writer.writerow(["id", "nome", "cpf", "email", "telefone", "data_nascimento"])
 
