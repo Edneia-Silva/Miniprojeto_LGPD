@@ -183,5 +183,5 @@ cython_debug/
 # Arquivos de dados e logs (Atividades 2, 3 e 4)
 *.csv
 log.txt
-execucao.log
+
 

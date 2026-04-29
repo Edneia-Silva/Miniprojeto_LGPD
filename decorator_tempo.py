@@ -1,7 +1,6 @@
 import time
 from functools import wraps
 from datetime import datetime
-import logging
 
 def medir_tempo(func):
     @wraps(func)
