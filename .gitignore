@@ -180,5 +180,8 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 
+# Arquivos de dados e logs (Atividades 2, 3 e 4)
 *.csv
-anos/
+log.txt
+execucao.log
+
